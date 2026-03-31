@@ -1,0 +1,9 @@
+satellites:
+  - id: "SAT_ALPHA"
+    broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud"
+    topic: "esa/astralog/telemetry"
+    folder: "alpha_mission"
+  # - id: "SAT_BETA"
+  #   broker: "03631557be364439a74d8fe1331c24e8.s1.eu.hivemq.cloud"
+  #   topic: "esa/astralog/telemetry"
+  #   folder: "beta_mission"

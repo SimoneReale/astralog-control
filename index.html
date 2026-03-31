@@ -1,106 +1,89 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AstraLog-HPC | Mission Control</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <title>ESA AstraLog Fleet</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #eee; text-align: center; padding: 50px; }
-        .container { max-width: 600px; margin: 0 auto; background: #2d2d2d; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #00aaff; margin-bottom: 10px; }
-        .status-box { padding: 15px; margin: 20px 0; border-radius: 8px; font-weight: bold; transition: 0.3s; }
-        .status-up { background: #1b4d3e; color: #2ecc71; border: 1px solid #2ecc71; }
-        .status-down { background: #4d1b1b; color: #e74c3c; border: 1px solid #e74c3c; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .btn { padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: 0.2s; cursor: pointer; border: none; }
-        .btn-download { background: #00aaff; color: white; }
-        .btn-download:hover { background: #0088cc; }
-        #log { font-family: monospace; font-size: 0.8em; margin-top: 20px; color: #888; height: 50px; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: #1a1a1a; border-radius: 12px; padding: 20px; border: 1px solid #333; position: relative; }
+        .cluster-info { font-family: monospace; font-size: 0.75em; color: #00aaff; display: block; margin-bottom: 10px; }
+        .status { float: right; padding: 4px 8px; border-radius: 4px; font-size: 0.7em; font-weight: bold; }
+        .active { background: #1b4d3e; color: #2ecc71; }
+        .offline { background: #4d1b1b; color: #e74c3c; }
+        .data-stream { background: #000; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.85em; color: #888; margin: 15px 0; min-height: 40px; }
+        .btn { background: #333; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 0.9em; margin-right: 5px; }
+        .btn:hover { background: #444; }
     </style>
 </head>
 <body>
+    <h1>🛰️ Mission Control Center</h1>
+    <div class="grid" id="fleet-grid"></div>
 
-<div class="container">
-    <h1>AstraLog-HPC</h1>
-    <p>Mission Telemetry Status Monitoring</p>
+    <script>
+        // --- CONFIGURAZIONE FLOTTA ---
+        // In un caso reale potresti fare il fetch del file yaml/json
+        const FLEET = [
+            { id: "SAT_ALPHA", broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "alpha_mission" },
+            { id: "SAT_BETA", broker: "another_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
+        ];
 
-    <!-- Indicatore di stato -->
-    <div id="statusBadge" class="status-box status-down">
-        STREAM STATUS: OFFLINE
-    </div>
+        const lastSeen = {};
 
-    <div id="log">In attesa di dati...</div>
-
-    <hr style="border: 0; border-top: 1px solid #444; margin: 20px 0;">
-
-    <p>Scarica le configurazioni di missione:</p>
-    <div class="btn-group">
-        <!-- Assicurati che i nomi dei file corrispondano a quelli nel repo -->
-        <a href="rules.json" download class="btn btn-download">📄 rules.json</a>
-        <a href="sensors.yaml" download class="btn btn-download">⚙️ sensors.yaml</a>
-    </div>
-</div>
-
-<script>
-    // --- CONFIGURAZIONE ---
-    const BROKER = "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud";
-    const PORT = 8884; // Porta WebSocket per HiveMQ Cloud
-    const TOPIC = "esa/astralog/telemetry";
-    const USER = "students";
-    const PASS = "Listeningstuff26";
-
-    let lastMessageTime = 0;
-    const statusBadge = document.getElementById('statusBadge');
-    const logDiv = document.getElementById('log');
-
-    const clientId = "web_monitor_" + Math.random().toString(16).substr(2, 8);
-    const client = new Paho.MQTT.Client("wss://" + BROKER + ":" + PORT + "/mqtt", clientId);
-
-    const options = {
-        useSSL: true,
-        userName: USER,
-        password: PASS,
-        onSuccess: onConnect,
-        onFailure: () => { 
-            console.log("Connessione Fallita");
-            updateStatus(false);
+        function createCard(sat) {
+            const html = `
+                <div class="card" id="card-${sat.id}">
+                    <span id="status-${sat.id}" class="status offline">OFFLINE</span>
+                    <small class="cluster-info">CLUSTER: ${sat.broker}</small>
+                    <b style="font-size: 1.4em;">${sat.id}</b>
+                    <div class="data-stream" id="stream-${sat.id}">Waiting for telemetry...</div>
+                    <div style="margin-top: 15px;">
+                        <a href="config/${sat.folder}/rules.json" download class="btn">Rules.json</a>
+                        <a href="config/${sat.folder}/sensors.yaml" download class="btn">Sensors.yaml</a>
+                    </div>
+                </div>`;
+            document.getElementById('fleet-grid').innerHTML += html;
         }
-    };
 
-    client.connect(options);
+        function initMQTT(sat) {
+            const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, `web_${sat.id}_${Math.random()}`);
+            
+            client.onMessageArrived = (msg) => {
+                lastSeen[sat.id] = Date.now();
+                const data = JSON.parse(msg.payloadString);
+                document.getElementById(`stream-${sat.id}`).innerHTML = `
+                    <span style="color: #2ecc71">●</span> [${data.sensor_id}] ${data.value}<br>
+                    <span style="font-size: 0.8em">${data.timestamp}</span>`;
+                
+                const badge = document.getElementById(`status-${sat.id}`);
+                badge.innerText = "ACTIVE";
+                badge.className = "status active";
+            };
 
-    function onConnect() {
-        console.log("Connesso a HiveMQ");
-        client.subscribe(TOPIC);
-    }
-
-    client.onMessageArrived = function(message) {
-        lastMessageTime = Date.now();
-        updateStatus(true);
-        
-        const data = JSON.parse(message.payloadString);
-        logDiv.innerText = `Ultimo pacchetto: ${data.sensor_id} -> ${data.value} @ ${data.timestamp}`;
-    };
-
-    function updateStatus(isUp) {
-        if(isUp) {
-            statusBadge.innerText = "STREAM STATUS: ACTIVE 🛰️";
-            statusBadge.className = "status-box status-up";
-        } else {
-            statusBadge.innerText = "STREAM STATUS: INACTIVE 🌑";
-            statusBadge.className = "status-box status-down";
+            client.connect({
+                useSSL: true, userName: "student_user", password: "student_password",
+                onSuccess: () => { client.subscribe(sat.topic); },
+                onFailure: () => { console.log(`Failed to connect ${sat.id}`); }
+            });
         }
-    }
 
-    // Watchdog: se non riceve messaggi per più di 5 secondi, mette lo stato in Down
-    setInterval(() => {
-        if (Date.now() - lastMessageTime > 5000) {
-            updateStatus(false);
-        }
-    }, 2000);
+        // Avvio
+        FLEET.forEach(sat => {
+            createCard(sat);
+            initMQTT(sat);
+        });
 
-</script>
-
+        // Watchdog (30 secondi per essere molto tollerante ai lag del browser)
+        setInterval(() => {
+            const now = Date.now();
+            FLEET.forEach(sat => {
+                if (!lastSeen[sat.id] || (now - lastSeen[sat.id] > 30000)) {
+                    const badge = document.getElementById(`status-${sat.id}`);
+                    badge.innerText = "OFFLINE";
+                    badge.className = "status offline";
+                }
+            });
+        }, 10000);
+    </script>
 </body>
 </html>
