@@ -16,11 +16,12 @@
             --success: #3fb950;
             --danger: #f85149;
             --warning: #d29922;
-            --terminal: #000000;
+            --terminal-bg: #000000;
+            --terminal-green: #2ecc71;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text-main);
             margin: 0;
@@ -28,208 +29,141 @@
             line-height: 1.6;
         }
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1000px; margin: 0 auto; }
 
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            margin: 0;
-            letter-spacing: -1px;
+        header { text-align: center; margin-bottom: 40px; }
+        h1 { 
+            font-size: 2.2rem; margin: 0; letter-spacing: -1px; 
             background: linear-gradient(90deg, #fff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
+        p.subtitle { color: var(--text-dim); margin-top: 8px; font-size: 1rem; }
 
-        p.subtitle {
-            color: var(--text-dim);
-            margin-top: 10px;
-            font-size: 1.1rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 25px;
-        }
-
-        .card {
-            background: var(--card-bg);
+        /* --- NOTICE BOARD (TERMINAL LOOK) --- */
+        .notice-board {
+            background: var(--terminal-bg);
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 24px;
-            transition: transform 0.2s, border-color 0.2s;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-
-        .card:hover {
-            border-color: var(--accent);
-        }
-
-        .sat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-
-        .sat-name {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .cluster-box {
-            background: var(--terminal);
-            border-radius: 6px;
-            padding: 10px 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            border: 1px solid #000;
-        }
-
-        .cluster-str {
-            font-family: 'Cascadia Code', 'Source Code Pro', monospace;
-            font-size: 0.75rem;
-            color: var(--accent);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-right: 10px;
-        }
-
-        .status-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px;
-            background: rgba(0,0,0,0.2);
             border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+            font-family: 'Cascadia Code', 'Source Code Pro', 'Courier New', monospace;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            position: relative;
+            text-align: left;
         }
-
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--text-dim);
+        .notice-board-header {
+            font-size: 0.7rem; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
         }
-
-        .status-text {
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            flex-grow: 1;
-        }
-
-        .btn {
-            font-family: inherit;
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            border: 1px solid var(--card-border);
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            text-decoration: none;
-        }
-
-        .btn-copy {
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            background: #21262d;
-            color: var(--text-main);
-        }
-
-        .btn-copy:hover { background: #30363d; color: #fff; }
-
-        .btn-check {
-            background: transparent;
-            color: var(--accent);
-            border-color: var(--accent);
-        }
-
-        .btn-check:hover:not(:disabled) {
-            background: rgba(88, 166, 255, 0.1);
-        }
-
-        .btn-check:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .btn-download {
-            background: #21262d;
-            color: var(--text-main);
-            flex: 1;
-        }
-
-        .btn-download:hover {
-            background: #30363d;
-            border-color: var(--text-dim);
-        }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .state-online { color: var(--success); }
-        .state-online .status-indicator { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .terminal-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff5f56; box-shadow: 15px 0 #ffbd2e, 30px 0 #27c93f; margin-right: 40px; }
         
+        .notice-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .notice-item { margin-bottom: 8px; font-size: 0.85rem; display: flex; gap: 10px; }
+        .notice-item::before { content: ">"; color: var(--terminal-green); font-weight: bold; }
+        .notice-date { color: var(--text-dim); min-width: 90px; }
+        .type-info { color: var(--accent); }
+        .type-warning { color: var(--warning); }
+        .type-critical { color: var(--danger); font-weight: bold; }
+
+        /* --- GRID & CARDS --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { 
+            background: var(--card-bg); border: 1px solid var(--card-border); 
+            border-radius: 12px; padding: 20px; transition: 0.2s; 
+        }
+        .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+        .sat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .sat-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
+
+        .cluster-box { 
+            background: #000; border-radius: 6px; padding: 8px 12px; 
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; 
+        }
+        .cluster-str { font-family: monospace; font-size: 0.7rem; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }
+
+        .status-row { 
+            display: flex; align-items: center; gap: 10px; margin-bottom: 20px; 
+            padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; 
+        }
+        .status-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
+        .status-text { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; flex-grow: 1; }
+
+        /* --- BUTTONS --- */
+        .btn { 
+            font-size: 0.75rem; font-weight: bold; padding: 6px 12px; border-radius: 6px; 
+            cursor: pointer; border: 1px solid var(--card-border); transition: 0.2s; text-decoration: none;
+        }
+        .btn-check { color: var(--accent); border-color: var(--accent); background: transparent; }
+        .btn-check:hover:not(:disabled) { background: rgba(88, 166, 255, 0.1); }
+        .btn-copy { font-size: 0.65rem; background: #21262d; color: var(--text-main); }
+        .btn-download { background: #21262d; color: var(--text-main); flex: 1; text-align: center; }
+        .btn-download:hover { background: #30363d; }
+        .actions { display: flex; gap: 8px; }
+
+        /* --- STATES --- */
+        .state-online { color: var(--success); }
+        .state-online .status-indicator { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .state-offline { color: var(--danger); }
         .state-offline .status-indicator { background: var(--danger); }
-
-        .state-checking { color: var(--warning); }
         .state-checking .status-indicator { background: var(--warning); animation: pulse 1s infinite; }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        footer {
-            margin-top: 60px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-        }
+        footer { margin-top: 50px; text-align: center; font-size: 0.75rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>🛰️ AstraLog Fleet Mission Control</h1>
-        <p class="subtitle">Real-time Telemetry Health Check & Configuration Center</p>
+        <h1>🛰️ AstraLog Mission Control</h1>
+        <p class="subtitle">A.Y. 2025-2026 Software Engineering for HPC</p>
     </header>
 
+    <!-- BACHECA AVVISI (TERMINAL FEED) -->
+    <div class="notice-board">
+        <div class="notice-board-header">
+            <div class="terminal-dot"></div>
+            Mission_Messages.log
+        </div>
+        <div class="notice-list">
+            <!-- AGGIUNGI QUI I TUOI MESSAGGI -->
+            <div class="notice-item">
+                <span class="notice-date">2025-04-10</span>
+                <span class="type-critical">[CRITICAL]</span>
+                <span>Ground data ingestion active. Start filtering local streams now.</span>
+            </div>
+            <div class="notice-item">
+                <span class="notice-date">2025-04-05</span>
+                <span class="type-warning">[WARNING]</span>
+                <span>High magnetic interference detected on SAT_BETA. Check for malformed JSON.</span>
+            </div>
+            <div class="notice-item">
+                <span class="notice-date">2025-03-31</span>
+                <span class="type-info">[INFO]</span>
+                <span>Project repository template is now available on Webeep.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRIGLIA SATELLITI -->
     <div class="grid" id="fleet-grid"></div>
 
     <footer>
-        High Performance Computing Course | A.Y. 2025-2026 | Copyright Simone Reale, Elisabetta Di Nitto
+        Politecnico di Milano - School of Industrial and Information Engineering
     </footer>
 </div>
 
 <script>
     const FLEET = [
         { id: "SAT_ALPHA", broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "alpha_mission" },
-        //{ id: "SAT_BETA",  broker: "another_cluster_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
+        { id: "SAT_BETA",  broker: "another_cluster_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
     ];
 
-    const USER = "students";
-    const PASS = "Listeningstuff26";
+    const USER = "student_user";
+    const PASS = "student_password";
 
     const grid = document.getElementById('fleet-grid');
 
@@ -239,24 +173,19 @@
         card.innerHTML = `
             <div class="sat-header">
                 <div class="sat-name">${sat.id}</div>
-                <button class="btn btn-check" id="btn-${sat.id}" onclick="checkStatus('${sat.id}')">
-                    CHECK STREAM
-                </button>
+                <button class="btn btn-check" id="btn-${sat.id}" onclick="checkStatus('${sat.id}')">CHECK</button>
             </div>
-
             <div class="cluster-box">
                 <div class="cluster-str" id="str-${sat.id}">${sat.broker}</div>
                 <button class="btn btn-copy" onclick="copyText('${sat.broker}', this)">COPY</button>
             </div>
-
             <div class="status-row" id="row-${sat.id}">
                 <div class="status-indicator"></div>
                 <div class="status-text" id="label-${sat.id}">Status: Ready</div>
             </div>
-
             <div class="actions">
-                <a href="config/${sat.folder}/rules.json" download class="btn btn-download">📄 Rules</a>
-                <a href="config/${sat.folder}/sensors.yaml" download class="btn btn-download">⚙️ Sensors</a>
+                <a href="config/${sat.folder}/rules.json" download class="btn btn-download">Rules.json</a>
+                <a href="config/${sat.folder}/sensors.yaml" download class="btn btn-download">Sensors.yaml</a>
             </div>
         `;
         grid.appendChild(card);
@@ -264,13 +193,9 @@
 
     function copyText(text, btn) {
         navigator.clipboard.writeText(text).then(() => {
-            const originalText = btn.innerText;
+            const old = btn.innerText;
             btn.innerText = "COPIED!";
-            btn.style.color = "var(--success)";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.color = "var(--text-main)";
-            }, 2000);
+            setTimeout(() => btn.innerText = old, 2000);
         });
     }
 
@@ -280,22 +205,19 @@
         const row = document.getElementById(`row-${satId}`);
         const btn = document.getElementById(`btn-${satId}`);
 
-    
         btn.disabled = true;
         row.className = "status-row state-checking";
-        label.innerText = "Connecting...";
+        label.innerText = "Scanning...";
 
         let timeoutHandle;
-        const clientId = "web_check_" + Math.random().toString(16).substr(2, 4);
-        const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, clientId);
+        const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, "check_" + Math.random().toString(16).substr(2, 4));
 
-        // Fail safety: if no message in 7 seconds
         timeoutHandle = setTimeout(() => {
             row.className = "status-row state-offline";
-            label.innerText = "Status: Offline (No Data)";
+            label.innerText = "Status: Offline";
             btn.disabled = false;
             if(client.isConnected()) client.disconnect();
-        }, 7000);
+        }, 6000);
 
         client.onMessageArrived = (msg) => {
             clearTimeout(timeoutHandle);
@@ -303,26 +225,18 @@
             label.innerText = "Status: Online";
             btn.disabled = false;
             client.disconnect();
-            console.log(`Probe successful for ${satId}`);
         };
 
-        const options = {
-            useSSL: true,
-            userName: USER,
-            password: PASS,
-            onSuccess: () => {
-                label.innerText = "Listening...";
-                client.subscribe(sat.topic);
-            },
-            onFailure: (e) => {
+        client.connect({
+            useSSL: true, userName: USER, password: PASS,
+            onSuccess: () => client.subscribe(sat.topic),
+            onFailure: () => {
                 clearTimeout(timeoutHandle);
                 row.className = "status-row state-offline";
-                label.innerText = "Status: Unreachable";
+                label.innerText = "Unreachable";
                 btn.disabled = false;
             }
-        };
-
-        client.connect(options);
+        });
     }
 </script>
 
