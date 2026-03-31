@@ -1,89 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ESA AstraLog Fleet</title>
+    <meta charset="UTF-8">
+    <title>ESA AstraLog | Fleet Mission Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .card { background: #1a1a1a; border-radius: 12px; padding: 20px; border: 1px solid #333; position: relative; }
-        .cluster-info { font-family: monospace; font-size: 0.75em; color: #00aaff; display: block; margin-bottom: 10px; }
-        .status { float: right; padding: 4px 8px; border-radius: 4px; font-size: 0.7em; font-weight: bold; }
-        .active { background: #1b4d3e; color: #2ecc71; }
-        .offline { background: #4d1b1b; color: #e74c3c; }
-        .data-stream { background: #000; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.85em; color: #888; margin: 15px 0; min-height: 40px; }
-        .btn { background: #333; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 0.9em; margin-right: 5px; }
-        .btn:hover { background: #444; }
+        :root { --bg: #0a0b0d; --card: #161b22; --text: #c9d1d9; --accent: #58a6ff; --danger: #f85149; --success: #3fb950; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { border-bottom: 1px solid #30363d; padding-bottom: 20px; margin-bottom: 30px; }
+        h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+        
+        /* Card Style */
+        .card { background: var(--card); border: 1px solid #30363d; border-radius: 10px; padding: 20px; position: relative; transition: 0.2s; }
+        .card:hover { border-color: #8b949e; }
+        
+        /* Status Indicator */
+        .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .status-badge { font-size: 0.7rem; font-weight: bold; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+        .status-active { background: #1f402b; color: var(--success); border: 1px solid var(--success); }
+        .status-offline { background: #442326; color: var(--danger); border: 1px solid var(--danger); }
+        
+        /* Info Strings */
+        .broker-str { font-family: 'Cascadia Code', monospace; font-size: 0.7rem; color: var(--accent); display: block; overflow: hidden; text-overflow: ellipsis; }
+        .topic-str { font-size: 0.8rem; color: #8b949e; margin-bottom: 15px; }
+        
+        /* Console Output */
+        .console { background: #000; border-radius: 6px; padding: 12px; font-family: 'Consolas', monospace; font-size: 0.8rem; min-height: 50px; border: 1px solid #30363d; color: #8b949e; line-height: 1.4; }
+        .console b { color: var(--success); }
+
+        /* Buttons */
+        .actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { background: #21262d; border: 1px solid #30363d; color: var(--accent); padding: 8px 14px; border-radius: 6px; 
+               text-decoration: none; font-size: 0.85rem; font-weight: 500; cursor: pointer; flex: 1; text-align: center; }
+        .btn:hover { background: #30363d; border-color: #8b949e; }
+        
+        .loading { text-align: center; margin-top: 100px; color: #8b949e; }
     </style>
 </head>
 <body>
-    <h1>🛰️ Mission Control Center</h1>
-    <div class="grid" id="fleet-grid"></div>
 
-    <script>
-        // --- CONFIGURAZIONE FLOTTA ---
-        // In un caso reale potresti fare il fetch del file yaml/json
-        const FLEET = [
-            { id: "SAT_ALPHA", broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "alpha_mission" },
-            { id: "SAT_BETA", broker: "another_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
-        ];
+<header>
+    <h1>🛰️ Mission Control Center <span style="font-weight: 200; font-size: 0.9rem; color: #8b949e;">| AstraLog-HPC Fleet Monitor</span></h1>
+</header>
 
-        const lastSeen = {};
+<div id="loading" class="loading">Fetching Fleet Configuration...</div>
+<div class="grid" id="fleet-grid"></div>
 
-        function createCard(sat) {
-            const html = `
-                <div class="card" id="card-${sat.id}">
-                    <span id="status-${sat.id}" class="status offline">OFFLINE</span>
-                    <small class="cluster-info">CLUSTER: ${sat.broker}</small>
-                    <b style="font-size: 1.4em;">${sat.id}</b>
-                    <div class="data-stream" id="stream-${sat.id}">Waiting for telemetry...</div>
-                    <div style="margin-top: 15px;">
-                        <a href="config/${sat.folder}/rules.json" download class="btn">Rules.json</a>
-                        <a href="config/${sat.folder}/sensors.yaml" download class="btn">Sensors.yaml</a>
-                    </div>
-                </div>`;
-            document.getElementById('fleet-grid').innerHTML += html;
-        }
+<script>
+    const GITHUB_USER = "SimoneReale";
+    const GITHUB_REPO = "astralog-control";     
+    const lastSeen = {};
+    const clients = [];
 
-        function initMQTT(sat) {
-            const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, `web_${sat.id}_${Math.random()}`);
+    async function loadFleet() {
+        try {
+            const response = await fetch('fleet.yaml');
+            const text = await response.text();
+            const config = jsyaml.load(text);
             
-            client.onMessageArrived = (msg) => {
-                lastSeen[sat.id] = Date.now();
-                const data = JSON.parse(msg.payloadString);
-                document.getElementById(`stream-${sat.id}`).innerHTML = `
-                    <span style="color: #2ecc71">●</span> [${data.sensor_id}] ${data.value}<br>
-                    <span style="font-size: 0.8em">${data.timestamp}</span>`;
-                
-                const badge = document.getElementById(`status-${sat.id}`);
-                badge.innerText = "ACTIVE";
-                badge.className = "status active";
-            };
-
-            client.connect({
-                useSSL: true, userName: "student_user", password: "student_password",
-                onSuccess: () => { client.subscribe(sat.topic); },
-                onFailure: () => { console.log(`Failed to connect ${sat.id}`); }
+            document.getElementById('loading').style.display = 'none';
+            config.satellites.forEach(sat => {
+                createSatCard(sat);
+                connectMQTT(sat);
             });
+        } catch (e) {
+            document.getElementById('loading').innerHTML = `<span style="color:red">Error loading fleet.yaml: ${e.message}</span>`;
         }
+    }
 
-        // Avvio
-        FLEET.forEach(sat => {
-            createCard(sat);
-            initMQTT(sat);
-        });
+    function createSatCard(sat) {
+        const grid = document.getElementById('fleet-grid');
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${sat.id}`;
+        card.innerHTML = `
+            <div class="status-header">
+                <div>
+                    <span class="broker-str">${sat.broker}</span>
+                    <strong style="font-size: 1.3rem;">${sat.id}</strong>
+                </div>
+                <span id="badge-${sat.id}" class="status-badge status-offline">Offline</span>
+            </div>
+            <div class="topic-str">Topic: ${sat.topic}</div>
+            <div class="console" id="console-${sat.id}">No data received yet...</div>
+            <div class="actions">
+                <a href="config/${sat.folder}/rules.json" download class="btn">Rules.json</a>
+                <a href="config/${sat.folder}/sensors.yaml" download class="btn">Sensors.yaml</a>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
 
-        // Watchdog (30 secondi per essere molto tollerante ai lag del browser)
-        setInterval(() => {
-            const now = Date.now();
-            FLEET.forEach(sat => {
-                if (!lastSeen[sat.id] || (now - lastSeen[sat.id] > 30000)) {
-                    const badge = document.getElementById(`status-${sat.id}`);
-                    badge.innerText = "OFFLINE";
-                    badge.className = "status offline";
+    function connectMQTT(sat) {
+        const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, `web_${sat.id}_${Math.random().toString(16).substr(2, 5)}`);
+        
+        client.onMessageArrived = (msg) => {
+            lastSeen[sat.id] = Date.now();
+            const data = JSON.parse(msg.payloadString);
+            
+            const badge = document.getElementById(`badge-${sat.id}`);
+            badge.innerText = "Active";
+            badge.className = "status-badge status-active";
+            
+            const cons = document.getElementById(`console-${sat.id}`);
+            cons.innerHTML = `
+                <b>[RECEIVED]</b> ${data.sensor_id}<br>
+                VALUE: ${data.value} | PRIORITY: ${data.priority}<br>
+                <small>${data.timestamp}</small>
+            `;
+        };
+
+        const options = {
+            useSSL: true,
+            userName: "students",
+            password: "Listeningstuff26",
+            onSuccess: () => { 
+                console.log(`Connected to ${sat.id}`);
+                client.subscribe(sat.topic);
+            },
+            onFailure: (err) => { console.error(`Connect failed for ${sat.id}:`, err); }
+        };
+
+        client.connect(options);
+        clients.push(client);
+    }
+
+    setInterval(() => {
+        const now = Date.now();
+        Object.keys(lastSeen).forEach(id => {
+            if (now - lastSeen[id] > 30000) {
+                const badge = document.getElementById(`badge-${id}`);
+                if (badge) {
+                    badge.innerText = "Offline";
+                    badge.className = "status-badge status-offline";
                 }
-            });
-        }, 10000);
-    </script>
+            }
+        });
+    }, 10000);
+
+    window.onload = loadFleet;
+</script>
+
 </body>
 </html>
