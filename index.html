@@ -4,127 +4,120 @@
     <meta charset="UTF-8">
     <title>ESA AstraLog | Mission Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --text: #c9d1d9; --accent: #58a6ff; --danger: #f85149; --success: #3fb950; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        :root { --bg: #0d1117; --card: #161b22; --text: #c9d1d9; --accent: #58a6ff; --danger: #f85149; --success: #3fb950; --warning: #d29922; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         h1 { border-bottom: 1px solid #30363d; padding-bottom: 10px; font-size: 1.5rem; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
         
-     
-        .card { background: var(--card); border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: 0.2s; }
-        .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
-
-        .badge { font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
-        .status-active { background: #1f402b; color: var(--success); border: 1px solid var(--success); }
-        .status-offline { background: #442326; color: var(--danger); border: 1px solid var(--danger); }
-        
-  
+        .card { background: var(--card); border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
         .broker-info { font-family: monospace; font-size: 0.7rem; color: var(--accent); display: block; margin-bottom: 5px; }
-        .console { background: #000; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 0.8rem; color: #8b949e; min-height: 45px; border: 1px solid #30363d; }
         
-      
-        .actions { margin-top: 15px; display: flex; gap: 8px; }
-        .btn { background: #21262d; border: 1px solid #30363d; color: var(--accent); padding: 8px; border-radius: 6px; 
-               text-decoration: none; font-size: 0.8rem; flex: 1; text-align: center; font-weight: bold; }
-        .btn:hover { background: #30363d; }
+        .status-area { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; background: #000; padding: 10px; border-radius: 6px; border: 1px solid #333; }
+        .status-label { font-weight: bold; font-size: 0.9rem; }
+        
+        .status-unknown { color: #8b949e; }
+        .status-checking { color: var(--warning); animation: blink 1s infinite; }
+        .status-online { color: var(--success); }
+        .status-offline { color: var(--danger); }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .btn { background: #21262d; border: 1px solid #30363d; color: var(--text); padding: 8px 12px; border-radius: 6px; 
+               text-decoration: none; font-size: 0.8rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn:hover { background: #30363d; border-color: #8b949e; }
+        .btn-check { color: var(--accent); border-color: var(--accent); }
+        .btn-check:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .actions { display: flex; gap: 8px; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>🛰️ ESA AstraLog-HPC | <span style="font-weight: 200; color: #8b949e;">Fleet Monitor</span></h1>
+    <h1>🛰️ ESA AstraLog-HPC | <span style="font-weight: 200; color: #8b949e;">On-Demand Fleet Check</span></h1>
 
     <div class="grid" id="fleet-grid"></div>
 
     <script>
-        // =============================================================
-        // CONFIGURAZIONE FLOTTA
-        // =============================================================
         const FLEET = [
-            {
-                id: "SAT_ALPHA",
-                broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud",
-                topic: "esa/astralog/telemetry",
-                folder: "alpha_mission"
-            },
-            // {
-            //     id: "SAT_BETA",
-            //     broker: "another_cluster_id.s1.eu.hivemq.cloud", 
-            //     topic: "esa/astralog/telemetry",
-            //     folder: "beta_mission"
-            // }
+            { id: "SAT_ALPHA", broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "alpha_mission" },
+            // { id: "SAT_BETA",  broker: "another_cluster_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
         ];
 
         const USER = "students";
         const PASS = "Listeningstuff26";
-        const lastSeen = {}; 
+
         const grid = document.getElementById('fleet-grid');
         FLEET.forEach(sat => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div class="status-header">
-                    <div>
-                        <span class="broker-info">${sat.broker}</span>
-                        <strong style="font-size: 1.2rem;">${sat.id}</strong>
-                    </div>
-                    <span id="badge-${sat.id}" class="badge status-offline">Offline</span>
+                <span class="broker-info">${sat.broker}</span>
+                <strong style="font-size: 1.2rem;">${sat.id}</strong>
+                
+                <div class="status-area">
+                    <span id="label-${sat.id}" class="status-label status-unknown">STATUS: READY</span>
+                    <button id="btn-${sat.id}" class="btn btn-check" onclick="checkSatellite('${sat.id}')">CHECK STATUS</button>
                 </div>
-                <div class="console" id="console-${sat.id}">Connecting to cluster...</div>
+
                 <div class="actions">
                     <a href="config/${sat.folder}/rules.json" download class="btn">Rules.json</a>
                     <a href="config/${sat.folder}/sensors.yaml" download class="btn">Sensors.yaml</a>
                 </div>
             `;
             grid.appendChild(card);
-            initMQTT(sat);
         });
 
-        function initMQTT(sat) {
-            const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, `monitor_${sat.id}_${Math.random().toString(16).substr(2, 4)}`);
-            
+        function checkSatellite(satId) {
+            const sat = FLEET.find(s => s.id === satId);
+            const label = document.getElementById(`label-${satId}`);
+            const btn = document.getElementById(`btn-${satId}`);
+
+            label.innerText = "STATUS: CONNECTING...";
+            label.className = "status-label status-checking";
+            btn.disabled = true;
+
+            let timeoutHandle;
+            const clientId = "checker_" + Math.random().toString(16).substr(2, 4);
+            const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, clientId);
+
+        
+            timeoutHandle = setTimeout(() => {
+                label.innerText = "STATUS: OFFLINE (NO DATA)";
+                label.className = "status-label status-offline";
+                btn.disabled = false;
+                if(client.isConnected()) client.disconnect();
+            }, 6000);
+
             client.onMessageArrived = (msg) => {
-                lastSeen[sat.id] = Date.now();
-                const data = JSON.parse(msg.payloadString);
+                clearTimeout(timeoutHandle);
+                label.innerText = "STATUS: ONLINE 🛰️";
+                label.className = "status-label status-online";
+                btn.disabled = false;
                 
-                const badge = document.getElementById(`badge-${sat.id}`);
-                badge.innerText = "Active";
-                badge.className = "badge status-active";
-                
-                document.getElementById(`console-${sat.id}`).innerHTML = `
-                    <span style="color:#3fb950">●</span> ${data.sensor_id}: ${data.value}<br>
-                    <small style="font-size:0.7rem">${data.timestamp}</small>
-                `;
+                console.log(`Data received for ${satId}: ${msg.payloadString}`);
+                client.disconnect();
             };
 
             const options = {
                 useSSL: true,
                 userName: USER,
                 password: PASS,
-                onSuccess: () => { 
-                    console.log(`Connected to ${sat.id}`);
+                onSuccess: () => {
+                    label.innerText = "STATUS: LISTENING...";
                     client.subscribe(sat.topic);
-                    document.getElementById(`console-${sat.id}`).innerText = "Waiting for data...";
                 },
-                onFailure: (e) => { 
-                    document.getElementById(`console-${sat.id}`).innerText = "Connection failed.";
-                    console.error(e); 
+                onFailure: (e) => {
+                    clearTimeout(timeoutHandle);
+                    label.innerText = "STATUS: UNREACHABLE";
+                    label.className = "status-label status-offline";
+                    btn.disabled = false;
+                    console.error(e);
                 }
             };
+
             client.connect(options);
         }
-
-        setInterval(() => {
-            const now = Date.now();
-            FLEET.forEach(sat => {
-                if (lastSeen[sat.id] && (now - lastSeen[sat.id] > 30000)) {
-                    const badge = document.getElementById(`badge-${sat.id}`);
-                    badge.innerText = "Offline";
-                    badge.className = "badge status-offline";
-                }
-            });
-        }, 5000);
     </script>
 </body>
 </html>
