@@ -129,38 +129,35 @@
             Mission_Messages.log
         </div>
         <div class="notice-list">
-            <!-- AGGIUNGI QUI I TUOI MESSAGGI -->
             <div class="notice-item">
-                <span class="notice-date">2025-04-10</span>
+                <span class="notice-date">2026-04-9</span>
                 <span class="type-critical">[CRITICAL]</span>
-                <span>Ground data ingestion active. Start filtering local streams now.</span>
+                <span>ALL SATELLITES ARE UNAVAILABLE.</span>
             </div>
-            <div class="notice-item">
-                <span class="notice-date">2025-04-05</span>
+            <!-- <div class="notice-item">
+                <span class="notice-date">2026-04-05</span>
                 <span class="type-warning">[WARNING]</span>
                 <span>High magnetic interference detected on SAT_BETA. Check for malformed JSON.</span>
-            </div>
+            </div> -->
             <div class="notice-item">
-                <span class="notice-date">2025-03-31</span>
+                <span class="notice-date">2026-04-9</span>
                 <span class="type-info">[INFO]</span>
-                <span>Project repository template is now available on Webeep.</span>
+                <span>Project repository templates are now available for both tracks.</span>
             </div>
         </div>
     </div>
 
-    <!-- GRIGLIA SATELLITI -->
     <div class="grid" id="fleet-grid"></div>
 
     <footer>
-        Politecnico di Milano - School of Industrial and Information Engineering
-        Copyright Simone Reale, Elisabetta Di Nitto 2026
+        Politecnico di Milano - Copyright Simone Reale, Elisabetta Di Nitto 2026
     </footer>
 </div>
 
 <script>
     const FLEET = [
         { id: "SAT_ALPHA", broker: "fb2fb70e5df845aaa8ac44ead8e3c5e1.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "alpha_mission" },
-        { id: "SAT_BETA",  broker: "another_cluster_id.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
+        { id: "SAT_BETA",  broker: "03631557be364439a74d8fe1331c24e8.s1.eu.hivemq.cloud", topic: "esa/astralog/telemetry", folder: "beta_mission" }
     ];
 
     const USER = "student_user";
