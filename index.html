@@ -260,8 +260,9 @@
             </div>
             <div class="chart-container"><canvas id="chart-${sat.id}"></canvas></div>
             <div class="cluster-box">
-                <div class="cluster-str">${sat.broker}</div>
-                <button class="btn btn-copy" onclick="copyText('${sat.broker}', this)">COPY</button>
+            <div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px;">MQTT Broker Endpoint</div>
+            <div class="cluster-str">${sat.broker}</div>
+            <button class="btn btn-copy" onclick="copyText('${sat.broker}', this)">COPY</button>
             </div>
             <div class="status-container">
                 <div class="status-row row-network" id="row-net-${sat.id}">
@@ -274,8 +275,8 @@
                 </div>
             </div>
             <div class="actions">
-                <a href="config/${sat.folder}/rules.json" download class="btn btn-download">Rules.json</a>
-                <a href="config/${sat.folder}/sensors.yaml" download class="btn btn-download">Sensors.yaml</a>
+            <a href="config/${sat.folder}/Current_rules_sat_${sat.id.split('_')[1].toLowerCase()}.json" download class="btn btn-download">Current Rules</a>
+            <a href="config/${sat.folder}/Current_sensors_sat_${sat.id.split('_')[1].toLowerCase()}.yaml" download class="btn btn-download">Current Sensors</a>
             </div>
         `;
         grid.appendChild(card);
