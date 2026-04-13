@@ -9,9 +9,10 @@ This site serves as the central point of truth for our ESA-inspired spacecraft t
 **[Click here to access AstraLog Control](https://simonereale.github.io/astralog-control/)**
 
 ## 🚀 Key Features
+AlstraLog Control is a web-based dashboard that allows you to access the spacecraft digital twin. This last one is implemented as a MQTT broker on top of the HiveMQ framework and simulates the behavior of the sensors associated to a set of spacecrafts.
 
 ### 1. Real-Time Fleet Monitoring
-The central grid displays the operational status of the satellite fleet (e.g., **SAT_ALPHA**, **SAT_BETA**). Each satellite card allows you to:
+The central grid in the user interface displays the operational status of the satellite fleet (e.g., **SAT_ALPHA**, **SAT_BETA**). Each satellite card allows you to:
 *   **Verify Availability:** Instantly probe if the satellite's Digital Twin is actively broadcasting on the mission cluster.
 *   **Throughput Analysis (Hz):** View a live chart of the packet arrival frequency (measured in Hertz). This is essential for verifying that your local Python collector is keeping up with the nominal mission bitrate.
 
@@ -25,7 +26,7 @@ Directly below the live telemetry monitors, you can download specific mission as
 The **Mission Timeline** header tracks the project's lifecycle. A dynamic progress bar and a countdown show exactly how much time remains until the final mission closure (fixed at **Midnight on June 14, 2026 (GMT +1)**).
 
 ### 4. Mission Messages Log (Terminal)
-The `Mission_Messages.log` terminal reports critical alerts from the instructors. Check this section regularly for updates regarding:
+The `Mission_Messages.log` terminal reports critical alerts from the instructors. **Check this section regularly for updates regarding**:
 *   Changes to the Satellites fleet.
 *   HiveMQ cluster maintenance windows.
 *   Release of new templates or documentation.
