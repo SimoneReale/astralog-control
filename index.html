@@ -40,7 +40,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* --- PROGRESS BAR (DEADLINE) --- */
         .deadline-container {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -86,7 +85,6 @@
         .auth-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; }
         .auth-val { font-family: monospace; font-size: 0.75rem; color: #fff; }
 
-        /* --- GRID & CARDS --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
         .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; transition: 0.2s; }
         
@@ -95,10 +93,9 @@
 
         .chart-container { background: #000; border-radius: 8px; padding: 10px; margin-bottom: 15px; height: 180px; position: relative; }
         
-        .cluster-box { background: #000; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .cluster-str { font-family: monospace; font-size: 0.7rem; color: var(--accent); overflow: hidden; text-overflow: ellipsis; }
+        .cluster-box { background: #000; border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .cluster-str { font-family: monospace; font-size: 0.7rem; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 
-        /* --- STATUS ROWS --- */
         .status-container { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
         .status-row { display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px; border-left: 3px solid var(--text-dim); }
         .status-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
@@ -111,12 +108,11 @@
         .btn { font-size: 0.7rem; font-weight: bold; padding: 6px 10px; border-radius: 6px; cursor: pointer; border: 1px solid var(--card-border); transition: 0.2s; text-decoration: none; }
         .btn-monitor { background: var(--accent); color: #000; border: none; min-width: 140px; }
         .btn-stop { background: var(--danger); color: #fff; border: none; }
-        .btn-copy { font-size: 0.6rem; background: #21262d; color: var(--text-main); }
+        .btn-copy { font-size: 0.6rem; background: #21262d; color: var(--text-main); border: 1px solid var(--card-border); }
         .btn-download { background: #21262d; color: var(--text-main); flex: 1; text-align: center; }
 
         .actions { display: flex; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 15px;}
 
-        /* Network States */
         .net-online { border-left-color: var(--success) !important; color: var(--success); }
         .net-online .status-indicator { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .net-offline { border-left-color: var(--danger) !important; color: var(--danger); }
@@ -195,7 +191,7 @@
     const PASS = "Listeningstuff26";
     const charts = {};
     const mqttClients = {};
-    const messageCounters = {}; 
+    const lastMessageTimes = {}; 
     const intervalHandles = {};
 
     function updateDeadline() {
@@ -240,7 +236,7 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
-                    y: { grid: { color: '#222' }, ticks: { color: '#555', font: { size: 10 } }, beginAtZero: true, suggestedMax: 15 }
+                    y: { grid: { color: '#222' }, ticks: { color: '#555', font: { size: 10 } }, beginAtZero: true, suggestedMax: 5 }
                 },
                 animation: false
             }
@@ -249,6 +245,7 @@
 
     const grid = document.getElementById('fleet-grid');
     FLEET.forEach(sat => {
+        const satSuffix = sat.id.split('_')[1].toLowerCase();
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -260,9 +257,11 @@
             </div>
             <div class="chart-container"><canvas id="chart-${sat.id}"></canvas></div>
             <div class="cluster-box">
-            <div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px;">MQTT Broker Endpoint</div>
-            <div class="cluster-str">${sat.broker}</div>
-            <button class="btn btn-copy" onclick="copyText('${sat.broker}', this)">COPY</button>
+                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                    <span style="font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;">MQTT Broker Endpoint</span>
+                    <div class="cluster-str">${sat.broker}</div>
+                </div>
+                <button class="btn btn-copy" onclick="copyText('${sat.broker}', this)">COPY</button>
             </div>
             <div class="status-container">
                 <div class="status-row row-network" id="row-net-${sat.id}">
@@ -275,8 +274,8 @@
                 </div>
             </div>
             <div class="actions">
-            <a href="config/${sat.folder}/Current_rules_sat_${sat.id.split('_')[1].toLowerCase()}.json" download class="btn btn-download">Current Rules</a>
-            <a href="config/${sat.folder}/Current_sensors_sat_${sat.id.split('_')[1].toLowerCase()}.yaml" download class="btn btn-download">Current Sensors</a>
+                <a href="config/${sat.folder}/Current_rules_sat_${satSuffix}.json" download class="btn btn-download">Current Rules</a>
+                <a href="config/${sat.folder}/Current_sensors_sat_${satSuffix}.yaml" download class="btn btn-download">Current Sensors</a>
             </div>
         `;
         grid.appendChild(card);
@@ -307,13 +306,16 @@
         metricsRow.style.display = "flex";
         
         updateNetworkUI(satId, "checking", "Connecting to stream...");
-        messageCounters[satId] = 0;
+        lastMessageTimes[satId] = [];
 
         const client = new Paho.MQTT.Client(`wss://${sat.broker}:8884/mqtt`, "mon_" + satId + Math.random().toString(16).substr(2, 4));
         mqttClients[satId] = client;
 
         client.onMessageArrived = (msg) => {
-            messageCounters[satId]++;
+            const now = Date.now();
+            lastMessageTimes[satId].push(now);
+            if (lastMessageTimes[satId].length > 15) lastMessageTimes[satId].shift();
+
             const labelNet = document.getElementById(`label-net-${satId}`).innerText;
             if (!labelNet.includes("Online")) {
                 updateNetworkUI(satId, "online", "Online (Live Feed)");
@@ -321,17 +323,25 @@
         };
 
         intervalHandles[satId] = setInterval(() => {
-            const count = messageCounters[satId];
-            messageCounters[satId] = 0; 
-            document.getElementById(`label-met-${satId}`).innerText = `Metrics: ${count} pkts/sec`;
+            const times = lastMessageTimes[satId];
+            let hz = 0;
             
-            if (count === 0 && mqttClients[satId]) {
-                updateNetworkUI(satId, "offline", "Inbound stream empty");
+            if (times.length > 1) {
+                const duration = (times[times.length - 1] - times[0]) / 1000;
+                hz = (times.length - 1) / duration;
             }
 
+            const lastMsg = times[times.length - 1];
+            if (lastMsg && (Date.now() - lastMsg > 15000)) {
+                hz = 0;
+                updateNetworkUI(satId, "offline", "Stream Idle (>15s)");
+            }
+
+            document.getElementById(`label-met-${satId}`).innerText = `Metrics: ${hz.toFixed(2)} Hz`;
+            
             const chart = charts[satId];
             chart.data.datasets[0].data.shift();
-            chart.data.datasets[0].data.push(count);
+            chart.data.datasets[0].data.push(hz);
             chart.update('none');
         }, 1000);
 
@@ -349,6 +359,7 @@
         document.getElementById(`row-met-${satId}`).style.display = "none";
         if (mqttClients[satId]) { mqttClients[satId].disconnect(); delete mqttClients[satId]; }
         if (intervalHandles[satId]) { clearInterval(intervalHandles[satId]); delete intervalHandles[satId]; }
+        if (lastMessageTimes[satId]) delete lastMessageTimes[satId];
         updateNetworkUI(satId, "ready", "Ready");
         const chart = charts[satId];
         chart.data.datasets[0].data = Array(20).fill(0);
@@ -365,6 +376,5 @@
     updateDeadline();
     setInterval(updateDeadline, 60000);
 </script>
-
 </body>
 </html>
