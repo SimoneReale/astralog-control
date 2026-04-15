@@ -1,4 +1,4 @@
-# 🌌 AstraLog Control
+# AstraLog Control
 
 [![GitHub Pages](https://img.shields.io/badge/Deployed_on-GitHub_Pages-blue?logo=github)](https://simonereale.github.io/astralog-control/)
 
@@ -8,7 +8,7 @@ This site serves as the central point of truth for our ESA-inspired spacecraft t
 
 **[Click here to access AstraLog Control](https://simonereale.github.io/astralog-control/)**
 
-## 🚀 Key Features
+## Key Features
 AlstraLog Control is a web-based dashboard that allows you to access the spacecraft digital twin. This last one is implemented as a MQTT broker on top of the HiveMQ framework and simulates the behavior of the sensors associated to a set of spacecrafts.
 
 ### 1. Real-Time Fleet Monitoring
@@ -33,7 +33,7 @@ The `Mission_Messages.log` terminal reports critical alerts from the instructors
 
 ---
 
-## 🛠️ Technical Notes for Students
+## Technical Notes for Students
 
 ### MQTT Authentication
 To connect your local collectors or C++ engines to the telemetry stream, use the credentials provided in the **🔑 Connection Auth** box:
